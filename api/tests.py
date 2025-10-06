@@ -78,7 +78,7 @@ class PermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         equipment = Equipment.objects.create(client=self.client_obj, equipment_type='Furnace')
-        service_data = {'equipment': equipment.id, 'service_date': '2023-01-01', 'service_type': 'Repair', 'description': 'test', 'cost': 100}
+        service_data = {'equipment': equipment.id, 'service_date': '2023-01-01', 'description': 'test', 'cost': 100}
         response = self.technician_client.post('/api/service-history/', service_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -115,7 +115,7 @@ class FeatureTests(APITestCase):
         # Create sample data
         self.client_obj = Client.objects.create(first_name='Audit', last_name='Client', email='audit@example.com')
         self.equipment = Equipment.objects.create(client=self.client_obj, equipment_type='Coil')
-        self.service_history = ServiceHistory.objects.create(equipment=self.equipment, service_date='2023-01-01', service_type='Repair', description='test', cost=100)
+        self.service_history = ServiceHistory.objects.create(equipment=self.equipment, service_date='2023-01-01', description='test', cost=100)
 
     def test_invoice_payment_fields(self):
         invoice = Invoice.objects.create(client=self.client_obj, service_history=self.service_history, invoice_date='2023-01-01', amount_due=100)
@@ -228,13 +228,13 @@ class CalendarFeatureTests(APITestCase):
         self.assertNotIn('Water Heater', equipment_types)
 
     def test_user_profile_color(self):
-        response = self.tech1_client.get('/api/profiles/')
+        response = self.tech1_client.get('/api/user-profiles/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['color'], '#0000FF')
 
         profile_id = UserProfile.objects.get(user=self.tech1).id
-        response = self.tech1_client.patch(f'/api/profiles/{profile_id}/', {'color': '#AAAAAA'})
+        response = self.tech1_client.patch(f'/api/user-profiles/{profile_id}/', {'color': '#AAAAAA'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         profile = UserProfile.objects.get(user=self.tech1)
@@ -281,6 +281,34 @@ class CalendarFeatureTests(APITestCase):
             'end_time': self.end_time, 'technicians': [self.tech2.id]
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_appointment_update_conflict(self):
+        # Create a second appointment for the same technician, but at a different time
+        second_start_time = self.end_time + timedelta(hours=1)
+        second_end_time = second_start_time + timedelta(hours=2)
+
+        # First, create the initial non-conflicting appointments
+        appointment1 = Appointment.objects.create(
+            title='First Job', client=self.client_obj, start_time=self.start_time,
+            end_time=self.end_time
+        )
+        appointment1.technicians.add(self.tech1)
+
+        appointment2 = Appointment.objects.create(
+            title='Second Job', client=self.client_obj, start_time=second_start_time,
+            end_time=second_end_time
+        )
+        appointment2.technicians.add(self.tech1)
+
+        # Now, try to update the second appointment to conflict with the first one
+        response = self.admin_client.patch(f'/api/appointments/{appointment2.id}/', {
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+        })
+
+        # This should fail because it creates a conflict for tech1
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('already booked', str(response.data))
 
     def test_appointment_filtering(self):
         Appointment.objects.create(

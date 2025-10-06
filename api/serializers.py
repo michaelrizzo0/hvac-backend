@@ -114,22 +114,33 @@ class AppointmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, data):
-        start_time = data.get('start_time') or (self.instance and self.instance.start_time)
-        end_time = data.get('end_time') or (self.instance and self.instance.end_time)
-        technicians = data.get('technicians')
+        # Determine the final state of the appointment's times and technicians
+        start_time = data.get('start_time', self.instance.start_time if self.instance else None)
+        end_time = data.get('end_time', self.instance.end_time if self.instance else None)
 
+        if 'technicians' in data:
+            technicians_to_check = data['technicians']
+        elif self.instance:
+            technicians_to_check = self.instance.technicians.all()
+        else:
+            technicians_to_check = []
+
+        # Basic time validation
         if start_time and end_time and start_time >= end_time:
             raise serializers.ValidationError("Appointment end time must be after start time.")
 
-        if technicians:
-            for technician in technicians:
+        # If we have technicians and a time range, check for conflicts
+        if technicians_to_check and start_time and end_time:
+            for technician in technicians_to_check:
                 conflicting_appointments = Appointment.objects.filter(
                     technicians=technician,
                     start_time__lt=end_time,
                     end_time__gt=start_time
                 )
+                # When updating, exclude the current appointment from the check
                 if self.instance:
                     conflicting_appointments = conflicting_appointments.exclude(pk=self.instance.pk)
+
                 if conflicting_appointments.exists():
                     raise serializers.ValidationError(
                         f"Technician {technician.username} is already booked during this time."
