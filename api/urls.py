@@ -12,6 +12,7 @@ router.register(r'clients', views.ClientViewSet, basename='client')
 router.register(r'appointments', views.AppointmentViewSet, basename='appointment')
 router.register(r'invoices', views.InvoiceViewSet, basename='invoice')
 router.register(r'equipment', views.EquipmentViewSet, basename='equipment')
+router.register(r'equipment-database', views.EquipmentDatabaseViewSet, basename='equipmentdatabase')
 router.register(r'service-history', views.ServiceHistoryViewSet, basename='servicehistory')
 
 # Employee & HR

@@ -5,7 +5,7 @@ from django.contrib.auth.models import User, Group
 from .models import (
     Client, UserProfile, JobType, Equipment, ServiceHistory, Note, Invoice,
     MaintenanceReminder, Part, TimeLog, PTORequest, Attachment, Notification, AuditLog,
-    Appointment
+    Appointment, EquipmentDatabase
 )
 
 # =================================================================
@@ -27,6 +27,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 'email', 'profile', 'groups')
+
+class EquipmentDatabaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EquipmentDatabase
+        fields = '__all__'
 
 # =================================================================
 # Part & HR Serializers

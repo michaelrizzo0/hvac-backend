@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User, Group
 from django.db.models import Avg, Sum
-from rest_framework import viewsets, permissions, views, status
+from rest_framework import viewsets, permissions, views, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from django.utils import timezone
@@ -14,7 +15,7 @@ from .models import *
 from .serializers import *
 from .permissions import *
 from .mixins import *
-from .filters import *
+from .filters import AppointmentFilter
 
 textract = boto3.client('textract', region_name='us-east-1')
 
@@ -49,6 +50,14 @@ class EquipmentViewSet(AuditLoggingMixin, viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
     permission_classes = [IsAdminOrTechnicianReadOnly]
+
+class EquipmentDatabaseViewSet(viewsets.ModelViewSet):
+    queryset = EquipmentDatabase.objects.all()
+    serializer_class = EquipmentDatabaseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    search_fields = ['manufacturer', 'model_number', 'description']
+    filterset_fields = ['equipment_type']
 
 class ServiceHistoryViewSet(AuditLoggingMixin, viewsets.ModelViewSet):
     queryset = ServiceHistory.objects.all()

@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from django.utils import timezone
-from .models import Client, Equipment, ServiceHistory, Note, Invoice, MaintenanceReminder, AuditLog, UserProfile, Appointment
+from .models import Client, Equipment, ServiceHistory, Note, Invoice, MaintenanceReminder, AuditLog, UserProfile, Appointment, EquipmentDatabase
 from datetime import timedelta
 
 class PermissionTests(APITestCase):
@@ -305,3 +305,59 @@ class CalendarFeatureTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['title'], 'Job B')
+
+class EquipmentDatabaseFeatureTests(APITestCase):
+    def setUp(self):
+        # Create user
+        self.user = User.objects.create_user(username='testuser', password='password123')
+        self.token, _ = Token.objects.get_or_create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        # Create sample data
+        EquipmentDatabase.objects.create(
+            equipment_type='furnace',
+            manufacturer='Goodman',
+            model_number='GMVC96',
+            description='A high-efficiency gas furnace.'
+        )
+        EquipmentDatabase.objects.create(
+            equipment_type='ac',
+            manufacturer='Trane',
+            model_number='XV20i',
+            description='A variable speed air conditioner.'
+        )
+        EquipmentDatabase.objects.create(
+            equipment_type='furnace',
+            manufacturer='Lennox',
+            model_number='SLP98V',
+            description='A quiet and efficient gas furnace.'
+        )
+
+    def test_list_equipment_database(self):
+        """Ensure we can list all equipment in the database."""
+        response = self.client.get('/api/equipment-database/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+
+    def test_search_equipment_database(self):
+        """Ensure we can search for equipment by manufacturer or description."""
+        response = self.client.get('/api/equipment-database/?search=Goodman')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['manufacturer'], 'Goodman')
+
+        response = self.client.get('/api/equipment-database/?search=furnace')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_filter_equipment_database_by_type(self):
+        """Ensure we can filter equipment by type."""
+        response = self.client.get('/api/equipment-database/?equipment_type=furnace')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertTrue(all(item['equipment_type'] == 'furnace' for item in response.data))
+
+        response = self.client.get('/api/equipment-database/?equipment_type=ac')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['equipment_type'], 'ac')
