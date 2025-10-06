@@ -78,7 +78,7 @@ class PermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         equipment = Equipment.objects.create(client=self.client_obj, equipment_type='Furnace')
-        service_data = {'equipment': equipment.id, 'service_date': '2023-01-01', 'service_type': 'Repair', 'description': 'test', 'cost': 100}
+        service_data = {'equipment': equipment.id, 'service_date': '2023-01-01', 'description': 'test', 'cost': 100}
         response = self.technician_client.post('/api/service-history/', service_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -115,7 +115,7 @@ class FeatureTests(APITestCase):
         # Create sample data
         self.client_obj = Client.objects.create(first_name='Audit', last_name='Client', email='audit@example.com')
         self.equipment = Equipment.objects.create(client=self.client_obj, equipment_type='Coil')
-        self.service_history = ServiceHistory.objects.create(equipment=self.equipment, service_date='2023-01-01', service_type='Repair', description='test', cost=100)
+        self.service_history = ServiceHistory.objects.create(equipment=self.equipment, service_date='2023-01-01', description='test', cost=100)
 
     def test_invoice_payment_fields(self):
         invoice = Invoice.objects.create(client=self.client_obj, service_history=self.service_history, invoice_date='2023-01-01', amount_due=100)
@@ -228,13 +228,13 @@ class CalendarFeatureTests(APITestCase):
         self.assertNotIn('Water Heater', equipment_types)
 
     def test_user_profile_color(self):
-        response = self.tech1_client.get('/api/profiles/')
+        response = self.tech1_client.get('/api/user-profiles/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['color'], '#0000FF')
 
         profile_id = UserProfile.objects.get(user=self.tech1).id
-        response = self.tech1_client.patch(f'/api/profiles/{profile_id}/', {'color': '#AAAAAA'})
+        response = self.tech1_client.patch(f'/api/user-profiles/{profile_id}/', {'color': '#AAAAAA'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         profile = UserProfile.objects.get(user=self.tech1)
@@ -305,3 +305,27 @@ class CalendarFeatureTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['title'], 'Job B')
+
+    def test_appointment_filter_span_days(self):
+        """Tests filtering for appointments that span across multiple days."""
+        start = timezone.now().replace(hour=22, minute=0, second=0, microsecond=0)
+        end = start + timedelta(hours=4)  # Spans midnight
+        appointment = Appointment.objects.create(
+            title="Overnight Job",
+            client=self.client_obj,
+            start_time=start,
+            end_time=end,
+        )
+        appointment.technicians.add(self.tech1)
+
+        # Filter for the first day
+        start_day_str = start.strftime('%Y-%m-%d')
+        response = self.admin_client.get(f'/api/appointments/?start_date={start_day_str}&end_date={start_day_str}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1, "Should find appointment when filtering for the first day.")
+
+        # Filter for the second day
+        end_day_str = end.strftime('%Y-%m-%d')
+        response = self.admin_client.get(f'/api/appointments/?start_date={end_day_str}&end_date={end_day_str}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1, "Should find appointment when filtering for the second day.")

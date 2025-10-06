@@ -32,7 +32,7 @@ class AuditLoggingMixin:
                 user=self.request.user,
                 client=client,
                 action=f"CREATED {instance.__class__.__name__}",
-                details=str(instance)
+                metadata={'details': str(instance)}
             )
 
     def perform_update(self, serializer):
@@ -43,7 +43,7 @@ class AuditLoggingMixin:
                 user=self.request.user,
                 client=client,
                 action=f"UPDATED {instance.__class__.__name__}",
-                details=str(instance)
+                metadata={'details': str(instance)}
             )
 
     def perform_destroy(self, instance):
@@ -57,7 +57,7 @@ class AuditLoggingMixin:
                 user=self.request.user,
                 client=client,
                 action=f"DELETED {model_name}",
-                details=details
+                metadata={'details': str(instance)}
             )
 
         instance.delete()
