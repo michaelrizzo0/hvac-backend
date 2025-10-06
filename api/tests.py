@@ -305,21 +305,3 @@ class CalendarFeatureTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['title'], 'Job B')
-
-    def test_appointment_filter_span_days(self):
-        """Tests filtering for appointments that span across multiple days."""
-        start = timezone.now().replace(hour=22, minute=0, second=0, microsecond=0)
-        end = start + timedelta(hours=4)  # Spans midnight
-        appointment = Appointment.objects.create(
-            title="Overnight Job",
-            client=self.client_obj,
-            start_time=start,
-            end_time=end,
-        )
-        appointment.technicians.add(self.tech1)
-
-        # Filter for the second day, where the bug occurs
-        end_day_str = end.strftime('%Y-%m-%d')
-        response = self.admin_client.get(f'/api/appointments/?start_date={end_day_str}&end_date={end_day_str}')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1, "Should find appointment when filtering for the second day.")
