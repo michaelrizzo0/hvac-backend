@@ -22,8 +22,8 @@ class GroupSerializer(serializers.ModelSerializer):
         fields = ('name',)
 
 class EmployeeSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer()
-    groups = GroupSerializer(many=True)
+    profile = UserProfileSerializer(read_only=True)
+    groups = GroupSerializer(many=True, read_only=True)
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 'email', 'profile', 'groups')
@@ -55,8 +55,15 @@ class AttachmentSerializer(serializers.ModelSerializer):
         model = Attachment
         fields = '__all__'
 
+class InvoiceSerializer(serializers.ModelSerializer):
+    attachments = AttachmentSerializer(many=True, read_only=True)
+    class Meta:
+        model = Invoice
+        fields = '__all__'
+
 class ServiceHistorySerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
+    invoices = InvoiceSerializer(many=True, read_only=True) # Added nested invoices
     class Meta:
         model = ServiceHistory
         fields = '__all__'
@@ -69,6 +76,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
 class ClientSerializer(serializers.ModelSerializer):
     equipment = EquipmentSerializer(many=True, read_only=True)
+    notes = serializers.StringRelatedField(many=True, read_only=True) # Added for convenience
     class Meta:
         model = Client
         fields = '__all__'
@@ -81,12 +89,6 @@ class JobTypeSerializer(serializers.ModelSerializer):
 class NoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Note
-        fields = '__all__'
-
-class InvoiceSerializer(serializers.ModelSerializer):
-    attachments = AttachmentSerializer(many=True, read_only=True)
-    class Meta:
-        model = Invoice
         fields = '__all__'
 
 class MaintenanceReminderSerializer(serializers.ModelSerializer):
@@ -106,6 +108,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
 class AppointmentSerializer(serializers.ModelSerializer):
     technicians_details = EmployeeSerializer(source='technicians', many=True, read_only=True)
+    client_details = ClientSerializer(source='client', read_only=True) # Added for convenience
     class Meta:
         model = Appointment
         fields = '__all__'
