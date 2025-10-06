@@ -50,6 +50,11 @@ class EquipmentViewSet(AuditLoggingMixin, viewsets.ModelViewSet):
     serializer_class = EquipmentSerializer
     permission_classes = [IsAdminOrTechnicianReadOnly]
 
+class EquipmentDatabaseViewSet(viewsets.ModelViewSet):
+    queryset = EquipmentDatabase.objects.all()
+    serializer_class = EquipmentDatabaseSerializer
+    permission_classes = [IsAdminOrSecretaryOrTechnicianReadOnly]
+
 class ServiceHistoryViewSet(AuditLoggingMixin, viewsets.ModelViewSet):
     queryset = ServiceHistory.objects.all()
     serializer_class = ServiceHistorySerializer
