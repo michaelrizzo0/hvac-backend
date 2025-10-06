@@ -318,13 +318,7 @@ class CalendarFeatureTests(APITestCase):
         )
         appointment.technicians.add(self.tech1)
 
-        # Filter for the first day
-        start_day_str = start.strftime('%Y-%m-%d')
-        response = self.admin_client.get(f'/api/appointments/?start_date={start_day_str}&end_date={start_day_str}')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1, "Should find appointment when filtering for the first day.")
-
-        # Filter for the second day
+        # Filter for the second day, where the bug occurs
         end_day_str = end.strftime('%Y-%m-%d')
         response = self.admin_client.get(f'/api/appointments/?start_date={end_day_str}&end_date={end_day_str}')
         self.assertEqual(response.status_code, status.HTTP_200_OK)

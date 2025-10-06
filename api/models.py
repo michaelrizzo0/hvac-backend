@@ -92,40 +92,6 @@ class Equipment(models.Model):
     def __str__(self):
         return f"{self.get_equipment_type_display()} - {self.manufacturer} {self.model_number}"
 
-
-class EquipmentDatabase(models.Model):
-    EQUIPMENT_TYPE_CHOICES = [
-        ('furnace', 'Furnace'),
-        ('ac', 'Air Conditioner'),
-        ('heat_pump', 'Heat Pump'),
-        ('coil', 'Coil'),
-        ('thermostat', 'Thermostat'),
-        ('humidifier', 'Humidifier'),
-        ('air_handler', 'Air Handler'),
-    ]
-    equipment_type = models.CharField(max_length=50, choices=EQUIPMENT_TYPE_CHOICES)
-    manufacturer = models.CharField(max_length=100)
-    model_number = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, default='')
-    filter_size = models.CharField(max_length=50, blank=True, default='')
-    refrigerant_type = models.CharField(max_length=50, blank=True, default='')
-    seer_rating = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    price_msrp = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    tonnage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    warranty_years = models.PositiveIntegerField(null=True, blank=True)
-    common_parts = models.JSONField(default=list, blank=True)
-    specs = models.JSONField(default=dict, blank=True)
-    manual_url = models.URLField(blank=True, default='')
-
-    def __str__(self):
-        return f"{self.manufacturer} {self.model_number}"
-
-    class Meta:
-        verbose_name = "Equipment (Database)"
-        verbose_name_plural = "Equipment (Database)"
-        ordering = ['manufacturer', 'model_number']
-
-
 class Part(models.Model):
     model_number = models.CharField(max_length=100, unique=True)
     part_name = models.CharField(max_length=200)
